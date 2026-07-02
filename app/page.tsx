@@ -5,7 +5,7 @@ export default function Home() {
         Chào mừng đến với OmniIcon
       </h1>
       <p className="mt-4 text-lg text-gray-600">
-        Nền tảng tự thiết kế và sinh code Icon số 1
+        Nền tảng tự thiết kế Icon. Hãy bắt đầu tạo ra những biểu tượng độc đáo của riêng bạn!
       </p>
     </main>
   );
