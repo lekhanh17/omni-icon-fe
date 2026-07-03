@@ -5,6 +5,15 @@
   --foreground: #171717;
 }
 
+@theme {
+  /* Định nghĩa bảng màu Jade pebble morning */
+  --color-jade-500: #7B9669; /* Xanh lục nhạt (Accent chính) */
+  --color-jade-900: #404E3B; /* Xanh rêu đậm (Logo, Text, Nút chính) */
+  --color-jade-700: #6C8480; /* Xanh xám mài (Accent phụ) */
+  --color-jade-200: #BAC8B1; /* Xanh pastel (Nền phụ, border) */
+  --color-jade-50: #E6E6E6;  /* Xám nhạt (Nền chính) */
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

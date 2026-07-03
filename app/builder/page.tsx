@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 export default function BuilderPage() {
-  const [color, setColor] = useState("#3b82f6");
+  const [color, setColor] = useState("#404E3B");
   const [size, setSize] = useState(120);
   const [strokeWidth, setStrokeWidth] = useState(2);
 
@@ -85,7 +85,7 @@ export default function BuilderPage() {
             </h2>
             <button
               onClick={() => navigator.clipboard.writeText(generatedCode)}
-              className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors font-semibold"
+              className="text-xs bg-jade-900 hover:bg-jade-700 text-white px-3 py-1.5 rounded transition-colors font-semibold"
             >
               Copy SVG
             </button>
