@@ -11,6 +11,9 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Khởi tạo các trạng thái để lưu thông tin nhập liệu
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -19,11 +22,13 @@ export default function RegisterPage() {
   // 3. Thêm state để quản lý trạng thái thành công
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Sửa thành hàm async để gọi dữ liệu xuống API /api/register
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess(false);
 
+    // Kiểm tra độ dài mật khẩu ở phía Client trước
     if (password.length < 8) {
       setError("Mật khẩu phải có ít nhất 8 ký tự.");
       return;
@@ -34,13 +39,38 @@ export default function RegisterPage() {
       return;
     }
 
-    // Nếu qua hết lỗi -> Bật thông báo màu xanh
-    setSuccess(true);
+    try {
+      // Gửi request POST tới API đăng ký phía Server
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+        }),
+      });
 
-    // 4. Hẹn giờ 1.5 giây sau tự động chuyển sang trang /login
-    setTimeout(() => {
-      router.push("/login");
-    }, 1500);
+      const data = await res.json();
+
+      // Nếu API trả về lỗi (Ví dụ: Trùng tài khoản email trong hệ thống)
+      if (!res.ok) {
+        setError(data.message || "Đăng ký thất bại.");
+        return;
+      }
+
+      // Nếu thành công hoàn toàn -> Bật thông báo màu xanh của bạn
+      setSuccess(true);
+
+      // 4. Hẹn giờ 1.5 giây sau tự động chuyển sang trang /login
+      setTimeout(() => {
+        router.push("/login");
+      }, 1500);
+    } catch (err) {
+      setError("Không thể kết nối đến máy chủ. Vui lòng thử lại.");
+    }
   };
 
   return (
@@ -70,6 +100,8 @@ export default function RegisterPage() {
             <input
               type="text"
               placeholder="Hãy nhập họ và tên của bạn..."
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-jade-500 focus:border-jade-500 transition-all text-gray-900"
               required
             />
@@ -83,6 +115,8 @@ export default function RegisterPage() {
             <input
               type="email"
               placeholder="Hãy nhập email của bạn..."
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-jade-500 focus:border-jade-500 transition-all text-gray-900"
               required
             />
@@ -214,14 +248,14 @@ export default function RegisterPage() {
           {/* Khối báo Lỗi */}
           {error && (
             <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded-r-lg font-medium shadow-sm animate-pulse">
-              {error}
+              ⚠️ {error}
             </div>
           )}
 
           {/* Khối báo Thành công của bạn */}
           {success && (
             <div className="p-3 bg-jade-50 border-l-4 border-jade-500 text-jade-900 text-sm rounded-r-lg font-medium shadow-sm">
-              Bạn đã đăng ký thành công! Đang chuyển hướng đến trang đăng
+              ✅ Bạn đã đăng ký thành công! Đang chuyển hướng đến trang đăng
               nhập...
             </div>
           )}
