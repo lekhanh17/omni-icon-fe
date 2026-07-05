@@ -1,11 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function BuilderPage() {
   const [color, setColor] = useState("#404E3B");
   const [size, setSize] = useState(120);
   const [strokeWidth, setStrokeWidth] = useState(2);
+
+  // Thông tin lưu icon
+  const [iconName, setIconName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        setCurrentUser(JSON.parse(storedUser));
+      } catch {
+        setCurrentUser(null);
+      }
+    }
+  }, []);
 
   // Thuật toán sinh code tự động dựa trên State hiện tại
   const generatedCode = `<svg
@@ -21,6 +42,49 @@ export default function BuilderPage() {
 >
   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
 </svg>`;
+
+  const handleSave = async () => {
+    setSaveError("");
+    setSaveSuccess(false);
+
+    if (!iconName.trim()) {
+      setSaveError("Vui lòng đặt tên cho icon trước khi lưu.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/icons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: iconName.trim(),
+          svgCode: generatedCode,
+          shape: "star",
+          color,
+          size,
+          strokeWidth,
+          authorId: currentUser?.id,
+          authorName: currentUser?.name,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setSaveError(data.message || "Lưu icon thất bại.");
+        return;
+      }
+
+      setSaveSuccess(true);
+      setIconName("");
+      setTimeout(() => setSaveSuccess(false), 2500);
+    } catch {
+      setSaveError("Không thể kết nối đến máy chủ. Vui lòng thử lại.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <main className="flex min-h-screen bg-gray-50 p-8 gap-8">
@@ -75,6 +139,35 @@ export default function BuilderPage() {
               className="w-full cursor-pointer"
             />
           </div>
+        </div>
+
+        {/* Bảng Lưu icon vào thư viện */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4">
+            Lưu vào thư viện
+          </h2>
+          <input
+            type="text"
+            placeholder="Đặt tên cho icon..."
+            value={iconName}
+            onChange={(e) => setIconName(e.target.value)}
+            className="w-full px-4 py-2.5 mb-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-jade-500 focus:border-jade-500 text-gray-900 text-sm"
+          />
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full bg-jade-900 hover:bg-jade-700 text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? "Đang lưu..." : "Lưu Icon"}
+          </button>
+          {saveError && (
+            <p className="mt-3 text-sm text-red-600">⚠️ {saveError}</p>
+          )}
+          {saveSuccess && (
+            <p className="mt-3 text-sm text-jade-900">
+              ✅ Đã lưu icon vào thư viện!
+            </p>
+          )}
         </div>
 
         {/* Bảng xuất Code tự động */}
