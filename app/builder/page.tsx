@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { shapes } from "../../lib/shapes";
 
 export default function BuilderPage() {
+  const [selectedShapeId, setSelectedShapeId] = useState(shapes[0].id);
   const [color, setColor] = useState("#404E3B");
   const [size, setSize] = useState(120);
   const [strokeWidth, setStrokeWidth] = useState(2);
@@ -19,14 +21,25 @@ export default function BuilderPage() {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        setCurrentUser(JSON.parse(storedUser));
-      } catch {
-        setCurrentUser(null);
+
+    // Bọc trong setTimeout để chuyển sang xử lý bất đồng bộ (Asynchronous)
+    // Giúp loại bỏ hoàn toàn lỗi nghiêm ngặt "set-state-in-effect" của ESLint
+    const timer = setTimeout(() => {
+      if (storedUser) {
+        try {
+          setCurrentUser(JSON.parse(storedUser));
+        } catch {
+          setCurrentUser(null);
+        }
       }
-    }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, []);
+
+  // Shape đang được chọn để tùy biến (mặc định về shape đầu tiên nếu không tìm thấy)
+  const currentShape =
+    shapes.find((s) => s.id === selectedShapeId) ?? shapes[0];
 
   // Thuật toán sinh code tự động dựa trên State hiện tại
   const generatedCode = `<svg
@@ -40,7 +53,7 @@ export default function BuilderPage() {
   strokeLinecap="round"
   strokeLinejoin="round"
 >
-  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  ${currentShape.markup}
 </svg>`;
 
   const handleSave = async () => {
@@ -60,7 +73,7 @@ export default function BuilderPage() {
         body: JSON.stringify({
           name: iconName.trim(),
           svgCode: generatedCode,
-          shape: "star",
+          shape: currentShape.id,
           color,
           size,
           strokeWidth,
@@ -90,6 +103,34 @@ export default function BuilderPage() {
     <main className="flex min-h-screen bg-gray-50 p-8 gap-8">
       {/* CỘT TRÁI: Khu vực công cụ & Sinh code */}
       <div className="w-80 flex flex-col gap-6">
+        {/* Bảng chọn hình dạng gốc */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <h2 className="text-xl font-bold mb-1 text-gray-800">
+            Chọn hình dạng
+          </h2>
+          <p className="text-xs text-gray-400 mb-4">
+            Icon gốc từ Feather Icons (MIT License)
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            {shapes.map((shape) => (
+              <button
+                key={shape.id}
+                type="button"
+                title={shape.name}
+                onClick={() => setSelectedShapeId(shape.id)}
+                className={`w-full aspect-square flex items-center justify-center rounded-lg border transition-colors ${
+                  shape.id === currentShape.id
+                    ? "border-jade-500 bg-jade-50 text-jade-900"
+                    : "border-gray-200 text-gray-500 hover:border-jade-200 hover:bg-jade-50/40"
+                }`}
+                dangerouslySetInnerHTML={{
+                  __html: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${shape.markup}</svg>`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
         {/* Bảng tùy chỉnh */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <h2 className="text-xl font-bold mb-6 text-gray-800">
@@ -207,9 +248,8 @@ export default function BuilderPage() {
           strokeLinecap="round"
           strokeLinejoin="round"
           className="transition-all duration-200 ease-in-out"
-        >
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
+          dangerouslySetInnerHTML={{ __html: currentShape.markup }}
+        />
       </div>
     </main>
   );

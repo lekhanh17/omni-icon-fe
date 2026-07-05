@@ -55,7 +55,7 @@ export default function LoginPage() {
       setTimeout(() => {
         router.push("/builder"); // Chuyển thẳng vào không gian làm việc
       }, 1500);
-    } catch (err) {
+    } catch {
       setError("Không thể kết nối đến máy chủ. Vui lòng thử lại.");
     }
   };

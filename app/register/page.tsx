@@ -68,7 +68,7 @@ export default function RegisterPage() {
       setTimeout(() => {
         router.push("/login");
       }, 1500);
-    } catch (err) {
+    } catch {
       setError("Không thể kết nối đến máy chủ. Vui lòng thử lại.");
     }
   };
