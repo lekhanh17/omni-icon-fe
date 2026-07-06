@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { shapes } from "../../lib/shapes";
+import PenCanvas from "./PenCanvas";
 
 export default function BuilderPage() {
+  const [mode, setMode] = useState<"preset" | "custom">("preset");
   const [selectedShapeId, setSelectedShapeId] = useState(shapes[0].id);
+  const [customPathD, setCustomPathD] = useState("");
   const [color, setColor] = useState("#404E3B");
   const [size, setSize] = useState(120);
   const [strokeWidth, setStrokeWidth] = useState(2);
@@ -37,9 +40,15 @@ export default function BuilderPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Shape đang được chọn để tùy biến (mặc định về shape đầu tiên nếu không tìm thấy)
+  // Shape đang được dùng: icon có sẵn (tùy biến) hoặc hình tự vẽ bằng Pen Tool
   const currentShape =
-    shapes.find((s) => s.id === selectedShapeId) ?? shapes[0];
+    mode === "custom"
+      ? {
+          id: "custom",
+          name: "Icon tự vẽ",
+          markup: customPathD ? `<path d="${customPathD}" />` : "",
+        }
+      : shapes.find((s) => s.id === selectedShapeId) ?? shapes[0];
 
   // Thuật toán sinh code tự động dựa trên State hiện tại
   const generatedCode = `<svg
@@ -62,6 +71,11 @@ export default function BuilderPage() {
 
     if (!iconName.trim()) {
       setSaveError("Vui lòng đặt tên cho icon trước khi lưu.");
+      return;
+    }
+
+    if (!currentShape.markup) {
+      setSaveError("Hãy chọn hoặc vẽ một hình trước khi lưu.");
       return;
     }
 
@@ -103,31 +117,66 @@ export default function BuilderPage() {
     <main className="flex min-h-screen bg-gray-50 p-8 gap-8">
       {/* CỘT TRÁI: Khu vực công cụ & Sinh code */}
       <div className="w-80 flex flex-col gap-6">
-        {/* Bảng chọn hình dạng gốc */}
+        {/* Bảng chọn / vẽ hình dạng gốc */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h2 className="text-xl font-bold mb-1 text-gray-800">
-            Chọn hình dạng
+          <h2 className="text-xl font-bold mb-4 text-gray-800">
+            Tạo hình dạng
           </h2>
-          <p className="text-xs text-gray-400 mb-4">
-            Icon gốc từ Feather Icons (MIT License)
-          </p>
-          <div className="grid grid-cols-4 gap-2">
-            {shapes.map((shape) => (
-              <button
-                key={shape.id}
-                type="button"
-                title={shape.name}
-                onClick={() => setSelectedShapeId(shape.id)}
-                className={`w-full aspect-square flex items-center justify-center rounded-lg border transition-colors ${
-                  shape.id === currentShape.id
-                    ? "border-jade-500 bg-jade-50 text-jade-900"
-                    : "border-gray-200 text-gray-500 hover:border-jade-200 hover:bg-jade-50/40"
-                }`}
-                dangerouslySetInnerHTML={{
-                  __html: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${shape.markup}</svg>`,
-                }}
-              />
-            ))}
+
+          {/* Tab chuyển đổi giữa 2 chế độ */}
+          <div className="flex gap-2 mb-4 p-1 bg-gray-100 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setMode("preset")}
+              className={`flex-1 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+                mode === "preset"
+                  ? "bg-white text-jade-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Icon có sẵn
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("custom")}
+              className={`flex-1 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+                mode === "custom"
+                  ? "bg-white text-jade-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Tự vẽ
+            </button>
+          </div>
+
+          {/* Chế độ 1: chọn icon có sẵn để tùy biến */}
+          <div className={mode === "preset" ? "" : "hidden"}>
+            <p className="text-xs text-gray-400 mb-4">
+              Icon gốc từ Feather Icons (MIT License)
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {shapes.map((shape) => (
+                <button
+                  key={shape.id}
+                  type="button"
+                  title={shape.name}
+                  onClick={() => setSelectedShapeId(shape.id)}
+                  className={`w-full aspect-square flex items-center justify-center rounded-lg border transition-colors ${
+                    mode === "preset" && shape.id === currentShape.id
+                      ? "border-jade-500 bg-jade-50 text-jade-900"
+                      : "border-gray-200 text-gray-500 hover:border-jade-200 hover:bg-jade-50/40"
+                  }`}
+                  dangerouslySetInnerHTML={{
+                    __html: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${shape.markup}</svg>`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Chế độ 2: tự vẽ path bằng Pen Tool */}
+          <div className={mode === "custom" ? "" : "hidden"}>
+            <PenCanvas onChange={setCustomPathD} />
           </div>
         </div>
 
@@ -236,6 +285,12 @@ export default function BuilderPage() {
         <h1 className="text-2xl font-bold mb-8 text-gray-400 absolute top-8">
           Workspace
         </h1>
+
+        {mode === "custom" && !currentShape.markup && (
+          <p className="text-sm text-gray-400 absolute top-20">
+            Vẽ hình ở bảng bên trái để xem trước tại đây
+          </p>
+        )}
 
         <svg
           xmlns="http://www.w3.org/2000/svg"
