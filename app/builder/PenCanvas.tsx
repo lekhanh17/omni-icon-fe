@@ -203,7 +203,7 @@ export default function PenCanvas({ onChange }: PenCanvasProps) {
           />
         )}
 
-        {/* Tay cầm bezier của điểm đang được kéo, để dễ hình dung đường cong */}
+        {/* Tay cầm bezier của điểm được kéo, để hình dung đường cong */}
         {activePoint && activePoint.handleOut && activePoint.handleIn && (
           <>
             <line
