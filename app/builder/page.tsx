@@ -3,14 +3,25 @@
 import { useEffect, useState } from "react";
 import { shapes } from "../../lib/shapes";
 import PenCanvas from "./PenCanvas";
+import FreehandCanvas from "./FreehandCanvas";
 
 export default function BuilderPage() {
   const [mode, setMode] = useState<"preset" | "custom">("preset");
+  const [drawTool, setDrawTool] = useState<"pen" | "pencil">("pen");
   const [selectedShapeId, setSelectedShapeId] = useState(shapes[0].id);
   const [customPathD, setCustomPathD] = useState("");
   const [color, setColor] = useState("#404E3B");
   const [size, setSize] = useState(120);
   const [strokeWidth, setStrokeWidth] = useState(2);
+  const [fillMode, setFillMode] = useState<"outline" | "fill">("outline");
+  const [cornerStyle, setCornerStyle] = useState<"round" | "square" | "sharp">(
+    "round"
+  );
+  const [rotation, setRotation] = useState(0);
+  const [flipH, setFlipH] = useState(false);
+  const [flipV, setFlipV] = useState(false);
+  const [dashLength, setDashLength] = useState(0);
+  const [opacity, setOpacity] = useState(100);
 
   // Thông tin lưu icon
   const [iconName, setIconName] = useState("");
@@ -50,19 +61,52 @@ export default function BuilderPage() {
         }
       : shapes.find((s) => s.id === selectedShapeId) ?? shapes[0];
 
+  // Kiểu góc/đầu nét: bo tròn / vuông / nhọn (chỉ có tác dụng khi ở chế độ viền)
+  const CORNER_STYLES = {
+    round: { linecap: "round", linejoin: "round" },
+    square: { linecap: "square", linejoin: "bevel" },
+    sharp: { linecap: "butt", linejoin: "miter" },
+  } as const;
+  const corner = CORNER_STYLES[cornerStyle];
+
+  // Tô đặc (fill) hay chỉ viền (stroke) ngoài
+  const fillValue = fillMode === "fill" ? color : "none";
+  const strokeValue = fillMode === "fill" ? "none" : color;
+
+  // Nét đứt: 0 = liền mạch
+  const dashArray = dashLength > 0 ? `${dashLength} ${dashLength}` : undefined;
+  const opacityValue = opacity / 100;
+
+  // Xoay + lật ngang/dọc quanh tâm viewBox (12, 12)
+  const transformParts: string[] = [];
+  if (flipH || flipV) {
+    transformParts.push(
+      `translate(12 12) scale(${flipH ? -1 : 1} ${flipV ? -1 : 1}) translate(-12 -12)`
+    );
+  }
+  if (rotation !== 0) {
+    transformParts.push(`rotate(${rotation} 12 12)`);
+  }
+  const transformAttr = transformParts.length > 0 ? transformParts.join(" ") : "";
+  const innerMarkup = transformAttr
+    ? `<g transform="${transformAttr}">${currentShape.markup}</g>`
+    : currentShape.markup;
+
   // Thuật toán sinh code tự động dựa trên State hiện tại
   const generatedCode = `<svg
   xmlns="http://www.w3.org/2000/svg"
   width="${size}"
   height="${size}"
   viewBox="0 0 24 24"
-  fill="none"
-  stroke="${color}"
-  strokeWidth="${strokeWidth}"
-  strokeLinecap="round"
-  strokeLinejoin="round"
+  fill="${fillValue}"
+  stroke="${strokeValue}"
+  stroke-width="${strokeWidth}"
+  stroke-linecap="${corner.linecap}"
+  stroke-linejoin="${corner.linejoin}"${dashArray ? `\n  stroke-dasharray="${dashArray}"` : ""}${
+    opacity < 100 ? `\n  opacity="${opacityValue}"` : ""
+  }
 >
-  ${currentShape.markup}
+  ${innerMarkup}
 </svg>`;
 
   const handleSave = async () => {
@@ -174,9 +218,39 @@ export default function BuilderPage() {
             </div>
           </div>
 
-          {/* Chế độ 2: tự vẽ path bằng Pen Tool */}
+          {/* Chế độ 2: tự vẽ (Pen Tool - đặt điểm chính xác, hoặc Bút chì - kéo tự do) */}
           <div className={mode === "custom" ? "" : "hidden"}>
-            <PenCanvas onChange={setCustomPathD} />
+            <div className="flex gap-2 mb-3 text-xs">
+              <button
+                type="button"
+                onClick={() => setDrawTool("pen")}
+                className={`flex-1 py-1.5 rounded-md font-semibold border transition-colors ${
+                  drawTool === "pen"
+                    ? "border-jade-500 bg-jade-50 text-jade-900"
+                    : "border-gray-200 text-gray-500 hover:border-jade-200"
+                }`}
+              >
+                Pen (chính xác)
+              </button>
+              <button
+                type="button"
+                onClick={() => setDrawTool("pencil")}
+                className={`flex-1 py-1.5 rounded-md font-semibold border transition-colors ${
+                  drawTool === "pencil"
+                    ? "border-jade-500 bg-jade-50 text-jade-900"
+                    : "border-gray-200 text-gray-500 hover:border-jade-200"
+                }`}
+              >
+                Bút chì (tự do)
+              </button>
+            </div>
+
+            <div className={drawTool === "pen" ? "" : "hidden"}>
+              <PenCanvas onChange={setCustomPathD} />
+            </div>
+            <div className={drawTool === "pencil" ? "" : "hidden"}>
+              <FreehandCanvas onChange={setCustomPathD} />
+            </div>
           </div>
         </div>
 
@@ -203,6 +277,98 @@ export default function BuilderPage() {
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
+              Kiểu vẽ
+            </label>
+            <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setFillMode("outline")}
+                className={`flex-1 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+                  fillMode === "outline"
+                    ? "bg-white text-jade-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Viền
+              </button>
+              <button
+                type="button"
+                onClick={() => setFillMode("fill")}
+                className={`flex-1 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+                  fillMode === "fill"
+                    ? "bg-white text-jade-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Tô đặc
+              </button>
+            </div>
+          </div>
+
+          {fillMode === "outline" && (
+            <>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Độ dày nét: {strokeWidth}px
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  step="0.5"
+                  value={strokeWidth}
+                  onChange={(e) => setStrokeWidth(Number(e.target.value))}
+                  className="w-full cursor-pointer"
+                />
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Kiểu góc
+                </label>
+                <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
+                  {(
+                    [
+                      { id: "round", label: "Bo tròn" },
+                      { id: "square", label: "Vuông" },
+                      { id: "sharp", label: "Nhọn" },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setCornerStyle(opt.id)}
+                      className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                        cornerStyle === opt.id
+                          ? "bg-white text-jade-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nét đứt: {dashLength === 0 ? "Liền mạch" : `${dashLength}`}
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="4"
+                  step="0.5"
+                  value={dashLength}
+                  onChange={(e) => setDashLength(Number(e.target.value))}
+                  className="w-full cursor-pointer"
+                />
+              </div>
+            </>
+          )}
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Kích thước: {size}px
             </label>
             <input
@@ -215,17 +381,62 @@ export default function BuilderPage() {
             />
           </div>
 
-          <div>
+          <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Độ dày nét: {strokeWidth}px
+              Xoay: {rotation}°
             </label>
             <input
               type="range"
-              min="1"
-              max="5"
-              step="0.5"
-              value={strokeWidth}
-              onChange={(e) => setStrokeWidth(Number(e.target.value))}
+              min="0"
+              max="360"
+              step="5"
+              value={rotation}
+              onChange={(e) => setRotation(Number(e.target.value))}
+              className="w-full cursor-pointer"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Lật hình
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setFlipH((v) => !v)}
+                className={`flex-1 py-2 rounded-lg border text-sm font-semibold transition-colors ${
+                  flipH
+                    ? "border-jade-500 bg-jade-50 text-jade-900"
+                    : "border-gray-200 text-gray-500 hover:border-jade-200"
+                }`}
+              >
+                Lật ngang
+              </button>
+              <button
+                type="button"
+                onClick={() => setFlipV((v) => !v)}
+                className={`flex-1 py-2 rounded-lg border text-sm font-semibold transition-colors ${
+                  flipV
+                    ? "border-jade-500 bg-jade-50 text-jade-900"
+                    : "border-gray-200 text-gray-500 hover:border-jade-200"
+                }`}
+              >
+                Lật dọc
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Độ trong suốt: {opacity}%
+            </label>
+            <input
+              type="range"
+              min="10"
+              max="100"
+              step="5"
+              value={opacity}
+              onChange={(e) => setOpacity(Number(e.target.value))}
               className="w-full cursor-pointer"
             />
           </div>
@@ -297,13 +508,15 @@ export default function BuilderPage() {
           width={size}
           height={size}
           viewBox="0 0 24 24"
-          fill="none"
-          stroke={color}
+          fill={fillValue}
+          stroke={strokeValue}
           strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          strokeLinecap={corner.linecap}
+          strokeLinejoin={corner.linejoin}
+          strokeDasharray={dashArray}
+          opacity={opacityValue}
           className="transition-all duration-200 ease-in-out"
-          dangerouslySetInnerHTML={{ __html: currentShape.markup }}
+          dangerouslySetInnerHTML={{ __html: innerMarkup }}
         />
       </div>
     </main>
