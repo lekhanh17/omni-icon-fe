@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "../../../lib/db";
 import User from "../../../models/User";
 import bcrypt from "bcryptjs";
+import {
+  createSessionToken,
+  SESSION_COOKIE_NAME,
+  SESSION_MAX_AGE_SECONDS,
+} from "../../../lib/auth";
 
 export async function POST(req: Request) {
   try {
@@ -30,7 +35,7 @@ export async function POST(req: Request) {
     }
 
     // 5. Trả về phản hồi đăng nhập thành công kèm thông tin cơ bản của User
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         message: "Đăng nhập thành công!",
         user: { id: user._id, name: user.name, email: user.email },
@@ -38,6 +43,18 @@ export async function POST(req: Request) {
       { status: 200 }
     );
 
+    // 6. Gắn session an toàn (httpOnly) để server tự xác định đúng người dùng
+    // ở các API sau này, thay vì tin vào dữ liệu client tự gửi lên
+    const token = createSessionToken(user._id.toString());
+    response.cookies.set(SESSION_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: SESSION_MAX_AGE_SECONDS,
+    });
+
+    return response;
   } catch (error) {
     console.error("Lỗi API Đăng nhập:", error);
     return NextResponse.json(

@@ -52,7 +52,13 @@ export default function Header() {
   }, [pathname]);
 
   // Hàm xử lý Đăng xuất
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      // Xóa session cookie httpOnly ở phía server, không chỉ dọn localStorage
+      await fetch("/api/logout", { method: "POST" });
+    } catch {
+      // Vẫn tiếp tục đăng xuất phía client kể cả khi lỗi mạng
+    }
     localStorage.removeItem("user");
     setCurrentUser(null);
     router.push("/login");
@@ -112,14 +118,17 @@ export default function Header() {
         <div className="flex items-center gap-2 sm:gap-4">
           {currentUser ? (
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="flex items-center gap-2">
+              <Link
+                href="/profile"
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              >
                 <div className="w-8 h-8 rounded-full bg-jade-900 text-white flex items-center justify-center font-bold text-sm shadow-sm select-none uppercase">
                   {currentUser.name.charAt(0)}
                 </div>
                 <span className="text-sm font-semibold text-gray-700 hidden md:inline max-w-30 truncate">
                   Chào, {currentUser.name}
                 </span>
-              </div>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="text-sm font-semibold text-red-600 hover:text-red-500 px-4 py-1.5 border border-red-200 hover:border-red-400 rounded-full bg-red-50/20 transition-all shadow-sm"

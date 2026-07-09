@@ -18,6 +18,22 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: [true, "Vui lòng nhập mật khẩu"],
     },
+    username: {
+      type: String,
+      unique: true,
+      sparse: true, // Cho phép tài khoản cũ chưa có username mà không vi phạm ràng buộc unique
+      lowercase: true,
+      trim: true,
+    },
+    bio: {
+      type: String,
+      default: "",
+      maxlength: 200,
+    },
+    avatarUrl: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true, // Tự động thêm trường ngày tạo (createdAt) và ngày cập nhật (updatedAt)
