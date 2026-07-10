@@ -166,7 +166,7 @@ export default function IconComments({ iconId, currentUserId }: Props) {
                     })}
                   </p>
                 </div>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap break-words">
+                <p className="text-sm text-gray-600 whitespace-pre-wrap wrap-break-word">
                   {c.text}
                 </p>
               </div>

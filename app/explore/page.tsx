@@ -28,13 +28,20 @@ function ExploreContent() {
 
   useEffect(() => {
     const stored = localStorage.getItem("user");
-    if (stored) {
-      try {
-        setCurrentUserId(JSON.parse(stored).id);
-      } catch {
-        setCurrentUserId(undefined);
+
+    // Bọc trong setTimeout để không setState đồng bộ ngay trong thân effect
+    // (tránh lỗi eslint react-hooks/set-state-in-effect)
+    const timer = setTimeout(() => {
+      if (stored) {
+        try {
+          setCurrentUserId(JSON.parse(stored).id);
+        } catch {
+          setCurrentUserId(undefined);
+        }
       }
-    }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {

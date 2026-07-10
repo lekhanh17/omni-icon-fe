@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4.5. Tài khoản bị khoá thì không cho đăng nhập
+    // 4.5. Tài khoản bị khoá thì ko thể đăng nhập
     if (user.isBanned) {
       return NextResponse.json(
         { message: "Tài khoản của bạn đã bị khoá." },

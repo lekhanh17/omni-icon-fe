@@ -70,7 +70,7 @@ export default async function IconDetailPage({ params }: PageProps) {
               }}
             >
               <div
-                className="w-full h-full max-w-[160px] max-h-[160px] [&>svg]:w-full [&>svg]:h-full"
+                className="w-full h-full max-w-40 max-h-40 [&>svg]:w-full [&>svg]:h-full"
                 dangerouslySetInnerHTML={{ __html: icon.svgCode }}
               />
             </div>
