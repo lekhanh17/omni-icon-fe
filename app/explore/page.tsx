@@ -1,15 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import IconGrid, { IconGridItem } from "../../components/IconGrid";
 import { categories } from "../../lib/categories";
 
+// useSearchParams() bắt buộc phải nằm trong <Suspense>, nếu không "next build"
+// (production build) sẽ báo lỗi, dù "next dev" vẫn chạy bình thường.
 export default function ExplorePage() {
+  return (
+    <Suspense fallback={null}>
+      <ExploreContent />
+    </Suspense>
+  );
+}
+
+function ExploreContent() {
+  const searchParams = useSearchParams();
   const [icons, setIcons] = useState<IconGridItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState("");
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
+  const [activeCategory, setActiveCategory] = useState(
+    searchParams.get("category") ?? ""
+  );
   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
 
   useEffect(() => {

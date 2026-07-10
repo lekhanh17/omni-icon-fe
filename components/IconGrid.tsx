@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export interface IconGridItem {
   _id: string;
@@ -92,13 +93,18 @@ export default function IconGrid({
             style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
             className="animate-fade-in-up bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:border-jade-200 hover:-translate-y-0.5 transition-all p-5 flex flex-col items-center"
           >
-            <div
-              className="w-16 h-16 flex items-center justify-center mb-4 [&>svg]:w-full [&>svg]:h-full"
-              dangerouslySetInnerHTML={{ __html: icon.svgCode }}
-            />
-            <p className="text-sm font-semibold text-gray-800 text-center truncate w-full mb-1">
-              {icon.name}
-            </p>
+            <Link
+              href={`/icon/${icon._id}`}
+              className="w-full flex flex-col items-center group"
+            >
+              <div
+                className="w-16 h-16 flex items-center justify-center mb-4 [&>svg]:w-full [&>svg]:h-full group-hover:scale-110 transition-transform"
+                dangerouslySetInnerHTML={{ __html: icon.svgCode }}
+              />
+              <p className="text-sm font-semibold text-gray-800 text-center truncate w-full mb-1 group-hover:text-jade-700 transition-colors">
+                {icon.name}
+              </p>
+            </Link>
 
             <button
               type="button"

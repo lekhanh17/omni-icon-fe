@@ -111,6 +111,83 @@ export default function BuilderPage() {
   ${innerMarkup}
 </svg>`;
 
+  // --- Xuất code sang các định dạng khác: HTML (img base64), React, Vue ---
+  const [exportFormat, setExportFormat] = useState<"svg" | "html" | "react" | "vue">(
+    "svg"
+  );
+
+  // Mã hoá base64 an toàn ở cả server (SSR) lẫn trình duyệt
+  const toBase64 = (str: string) => {
+    if (typeof window !== "undefined" && window.btoa) {
+      return window.btoa(unescape(encodeURIComponent(str)));
+    }
+    return Buffer.from(str, "utf-8").toString("base64");
+  };
+
+  // Chuyển tên icon thành PascalCase hợp lệ để đặt tên component React
+  const toPascalCase = (str: string) => {
+    const cleaned = str
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-zA-Z0-9]+/g, " ")
+      .trim();
+    if (!cleaned) return "MyIcon";
+    const pascal = cleaned
+      .split(" ")
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join("");
+    return /^[0-9]/.test(pascal) ? `Icon${pascal}` : pascal;
+  };
+  const componentName = toPascalCase(iconName);
+
+  const htmlCode = `<img
+  src="data:image/svg+xml;base64,${toBase64(generatedCode)}"
+  width="${size}"
+  height="${size}"
+  alt="${iconName.trim() || "icon"}"
+/>`;
+
+  const reactCode = `export default function ${componentName}(props) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={${size}}
+      height={${size}}
+      viewBox="0 0 24 24"
+      fill="${fillValue}"
+      stroke="${strokeValue}"
+      strokeWidth={${strokeWidth}}
+      strokeLinecap="${corner.linecap}"
+      strokeLinejoin="${corner.linejoin}"${dashArray ? `\n      strokeDasharray="${dashArray}"` : ""}${
+    opacity < 100 ? `\n      opacity={${opacityValue}}` : ""
+  }
+      {...props}
+    >
+      <g dangerouslySetInnerHTML={{ __html: \`${innerMarkup.replace(/`/g, "\\`")}\` }} />
+    </svg>
+  );
+}`;
+
+  const vueCode = `<template>
+${generatedCode
+  .split("\n")
+  .map((line) => "  " + line)
+  .join("\n")}
+</template>
+
+<script setup>
+// Component tĩnh, không cần thêm logic
+</script>`;
+
+  const codeByFormat: Record<typeof exportFormat, string> = {
+    svg: generatedCode,
+    html: htmlCode,
+    react: reactCode,
+    vue: vueCode,
+  };
+  const activeCode = codeByFormat[exportFormat];
+
   const handleSave = async () => {
     setSaveError("");
     setSaveSuccess(false);
@@ -476,11 +553,11 @@ export default function BuilderPage() {
             {saving ? "Đang lưu..." : "Lưu Icon"}
           </button>
           {saveError && (
-            <p className="mt-3 text-sm text-red-600">⚠️ {saveError}</p>
+            <p className="mt-3 text-sm text-red-600"> {saveError}</p>
           )}
           {saveSuccess && (
             <p className="mt-3 text-sm text-jade-900">
-              ✅ Đã lưu icon vào thư viện!
+              Đã lưu icon vào thư viện!
             </p>
           )}
         </div>
@@ -492,15 +569,34 @@ export default function BuilderPage() {
               Export Code
             </h2>
             <button
-              onClick={() => navigator.clipboard.writeText(generatedCode)}
+              onClick={() => navigator.clipboard.writeText(activeCode)}
               className="text-xs bg-jade-900 hover:bg-jade-700 text-white px-3 py-1.5 rounded transition-colors font-semibold"
             >
-              Copy SVG
+              Copy {exportFormat.toUpperCase()}
             </button>
           </div>
+
+          {/* Tab chọn định dạng xuất code */}
+          <div className="flex gap-1 mb-4">
+            {(["svg", "html", "react", "vue"] as const).map((fmt) => (
+              <button
+                key={fmt}
+                type="button"
+                onClick={() => setExportFormat(fmt)}
+                className={`px-3 py-1 rounded text-xs font-semibold uppercase transition-colors ${
+                  exportFormat === fmt
+                    ? "bg-jade-900 text-white"
+                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                }`}
+              >
+                {fmt}
+              </button>
+            ))}
+          </div>
+
           {/* Vùng hiển thị code với font chữ của dân IT */}
           <pre className="text-gray-300 text-xs font-mono overflow-x-auto p-4 bg-gray-900 rounded-lg border border-gray-700">
-            <code>{generatedCode}</code>
+            <code>{activeCode}</code>
           </pre>
         </div>
       </div>

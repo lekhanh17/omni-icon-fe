@@ -34,6 +34,15 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
+    isBanned: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true, // Tự động thêm trường ngày tạo (createdAt) và ngày cập nhật (updatedAt)

@@ -34,6 +34,24 @@ export async function POST(req: Request) {
       );
     }
 
+    // 4.5. Tài khoản bị khoá thì không cho đăng nhập
+    if (user.isBanned) {
+      return NextResponse.json(
+        { message: "Tài khoản của bạn đã bị khoá." },
+        { status: 403 }
+      );
+    }
+
+    // 4.6. Tự động phong admin cho email được cấu hình sẵn (chỉ chạy 1 lần khi chưa phải admin)
+    if (
+      process.env.ADMIN_BOOTSTRAP_EMAIL &&
+      user.email === process.env.ADMIN_BOOTSTRAP_EMAIL.toLowerCase() &&
+      user.role !== "admin"
+    ) {
+      user.role = "admin";
+      await user.save();
+    }
+
     // 5. Trả về phản hồi đăng nhập thành công kèm thông tin cơ bản của User
     const response = NextResponse.json(
       {
@@ -43,6 +61,7 @@ export async function POST(req: Request) {
           name: user.name,
           email: user.email,
           avatarUrl: user.avatarUrl,
+          role: user.role,
         },
       },
       { status: 200 }

@@ -1,8 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+
+interface SearchIconResult {
+  _id: string;
+  name: string;
+  svgCode: string;
+}
+
+interface SearchUserResult {
+  _id: string;
+  name: string;
+  username: string;
+  avatarUrl?: string;
+}
 
 export default function Header() {
   const router = useRouter();
@@ -11,7 +24,72 @@ export default function Header() {
     name: string;
     email: string;
     avatarUrl?: string;
+    role?: string;
   } | null>(null);
+
+  // --- Tìm kiếm nhanh (icon + người dùng) ---
+  const searchBoxRef = useRef<HTMLDivElement>(null);
+  const [query, setQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{
+    icons: SearchIconResult[];
+    users: SearchUserResult[];
+  }>({ icons: [], users: [] });
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    // Bọc cả nhánh "query rỗng" vào setTimeout để không setState đồng bộ
+    // ngay trong thân effect (tránh lỗi eslint react-hooks/set-state-in-effect)
+    const timer = setTimeout(async () => {
+      if (!query.trim()) {
+        setSearchResults({ icons: [], users: [] });
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `/api/search?q=${encodeURIComponent(query.trim())}`,
+          { signal: controller.signal }
+        );
+        const data = await res.json();
+        if (res.ok) {
+          setSearchResults({ icons: data.icons || [], users: data.users || [] });
+        }
+      } catch {
+        // Bỏ qua lỗi mạng khi gõ tìm kiếm nhanh
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query]);
+
+  // Đóng dropdown khi click ra ngoài ô tìm kiếm
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        searchBoxRef.current &&
+        !searchBoxRef.current.contains(e.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    setShowDropdown(false);
+    router.push(`/explore?q=${encodeURIComponent(query.trim())}`);
+  };
+
+  const hasSearchResults =
+    searchResults.icons.length > 0 || searchResults.users.length > 0;
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -51,6 +129,42 @@ export default function Header() {
       window.removeEventListener("storage", handleStorageChange);
     };
   }, [pathname]);
+
+  // Tự đồng bộ role (và các trường khác) từ server - phòng trường hợp tài khoản
+  // vừa được cấp quyền admin nhưng localStorage vẫn đang lưu dữ liệu cũ
+  useEffect(() => {
+    if (!currentUser) return;
+
+    let ignore = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/me");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (ignore || !data.user) return;
+
+        if (
+          data.user.role !== currentUser.role ||
+          data.user.avatarUrl !== currentUser.avatarUrl
+        ) {
+          const updated = {
+            ...currentUser,
+            role: data.user.role,
+            avatarUrl: data.user.avatarUrl,
+          };
+          setCurrentUser(updated);
+          localStorage.setItem("user", JSON.stringify(updated));
+        }
+      } catch {
+        // Bỏ qua lỗi mạng, giữ nguyên dữ liệu cũ trong localStorage
+      }
+    })();
+
+    return () => {
+      ignore = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.email]);
 
   // Hàm xử lý Đăng xuất
   const handleLogout = async () => {
@@ -104,29 +218,120 @@ export default function Header() {
                 Yêu thích
               </Link>
             )}
+            {currentUser?.role === "admin" && (
+              <Link
+                href="/admin"
+                className="text-jade-700 hover:text-jade-500 font-semibold transition-colors"
+              >
+                Quản trị
+              </Link>
+            )}
           </nav>
         </div>
 
         {/* Thanh tìm kiếm (Mini) */}
-        <div className="hidden flex-1 max-w-md mx-8 lg:block relative">
-          <input
-            type="text"
-            placeholder="Tìm kiếm icon nhanh..."
-            className="w-full pl-10 pr-4 py-2 bg-jade-50/50 border border-gray-200 rounded-full focus:outline-none focus:border-jade-500 focus:ring-1 focus:ring-jade-500 text-sm text-gray-900 placeholder-gray-400 transition-all"
-          />
-          <svg
-            className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        <div
+          ref={searchBoxRef}
+          className="hidden flex-1 max-w-md mx-8 lg:block relative"
+        >
+          <form onSubmit={handleSearchSubmit}>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setShowDropdown(true);
+              }}
+              onFocus={() => setShowDropdown(true)}
+              placeholder="Tìm kiếm icon hoặc người dùng..."
+              className="w-full pl-10 pr-4 py-2 bg-jade-50/50 border border-gray-200 rounded-full focus:outline-none focus:border-jade-500 focus:ring-1 focus:ring-jade-500 text-sm text-gray-900 placeholder-gray-400 transition-all"
             />
-          </svg>
+            <svg
+              className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </form>
+
+          {/* Dropdown gợi ý */}
+          {showDropdown && query.trim() && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden z-50 max-h-96 overflow-y-auto animate-fade-in-up">
+              {!hasSearchResults ? (
+                <p className="px-4 py-4 text-sm text-gray-400 text-center">
+                  Không tìm thấy kết quả nào.
+                </p>
+              ) : (
+                <>
+                  {searchResults.icons.length > 0 && (
+                    <div className="py-2">
+                      <p className="px-4 py-1 text-xs font-bold text-gray-400 uppercase tracking-wide">
+                        Icon
+                      </p>
+                      {searchResults.icons.map((icon) => (
+                        <Link
+                          key={icon._id}
+                          href={`/explore?q=${encodeURIComponent(icon.name)}`}
+                          onClick={() => setShowDropdown(false)}
+                          className="flex items-center gap-3 px-4 py-2 hover:bg-jade-50/60 transition-colors"
+                        >
+                          <div
+                            className="w-6 h-6 text-jade-900 shrink-0 [&>svg]:w-full [&>svg]:h-full"
+                            dangerouslySetInnerHTML={{ __html: icon.svgCode }}
+                          />
+                          <span className="text-sm text-gray-700 truncate">
+                            {icon.name}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+
+                  {searchResults.users.length > 0 && (
+                    <div className="py-2 border-t border-gray-100">
+                      <p className="px-4 py-1 text-xs font-bold text-gray-400 uppercase tracking-wide">
+                        Người dùng
+                      </p>
+                      {searchResults.users.map((user) => (
+                        <Link
+                          key={user._id}
+                          href={`/u/${user.username}`}
+                          onClick={() => setShowDropdown(false)}
+                          className="flex items-center gap-3 px-4 py-2 hover:bg-jade-50/60 transition-colors"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-jade-900 text-white flex items-center justify-center text-[10px] font-bold overflow-hidden uppercase shrink-0">
+                            {user.avatarUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={user.avatarUrl}
+                                alt={user.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              user.name.charAt(0)
+                            )}
+                          </div>
+                          <span className="text-sm text-gray-700 truncate">
+                            {user.name}{" "}
+                            <span className="text-gray-400">
+                              @{user.username}
+                            </span>
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Cụm Nút Đăng nhập / Đăng ký bên phải */}
