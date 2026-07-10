@@ -10,6 +10,7 @@ export default function Header() {
   const [currentUser, setCurrentUser] = useState<{
     name: string;
     email: string;
+    avatarUrl?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -89,6 +90,20 @@ export default function Header() {
             >
               Chế tác Icon
             </Link>
+            <Link
+              href="/leaderboard"
+              className="text-gray-600 hover:text-jade-500 font-semibold transition-colors"
+            >
+              Xếp hạng
+            </Link>
+            {currentUser && (
+              <Link
+                href="/favorites"
+                className="text-gray-600 hover:text-jade-500 font-semibold transition-colors"
+              >
+                Yêu thích
+              </Link>
+            )}
           </nav>
         </div>
 
@@ -122,8 +137,17 @@ export default function Header() {
                 href="/profile"
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity"
               >
-                <div className="w-8 h-8 rounded-full bg-jade-900 text-white flex items-center justify-center font-bold text-sm shadow-sm select-none uppercase">
-                  {currentUser.name.charAt(0)}
+                <div className="w-8 h-8 rounded-full bg-jade-900 text-white flex items-center justify-center font-bold text-sm shadow-sm select-none uppercase overflow-hidden">
+                  {currentUser.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={currentUser.avatarUrl}
+                      alt={currentUser.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    currentUser.name.charAt(0)
+                  )}
                 </div>
                 <span className="text-sm font-semibold text-gray-700 hidden md:inline max-w-30 truncate">
                   Chào, {currentUser.name}

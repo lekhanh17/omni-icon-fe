@@ -38,7 +38,12 @@ export async function POST(req: Request) {
     const response = NextResponse.json(
       {
         message: "Đăng nhập thành công!",
-        user: { id: user._id, name: user.name, email: user.email },
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          avatarUrl: user.avatarUrl,
+        },
       },
       { status: 200 }
     );

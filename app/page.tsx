@@ -1,19 +1,37 @@
 import Link from "next/link";
+import { connectToDatabase } from "../lib/db";
+import Icon from "../models/Icon";
+import User from "../models/User";
+import IconGrid from "../components/IconGrid";
 
-export default function Home() {
+export default async function Home() {
+  await connectToDatabase();
+
+  const [iconCount, userCount, latestIcons] = await Promise.all([
+    Icon.countDocuments(),
+    User.countDocuments(),
+    Icon.find().sort({ createdAt: -1 }).limit(5),
+  ]);
+
   return (
     <main className="flex flex-col items-center justify-center w-full">
       {/* --- HERO SECTION (Phần gây ấn tượng đầu tiên) --- */}
       <section className="w-full bg-white py-24 flex flex-col items-center justify-center text-center px-4 border-b border-gray-200">
-        <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 tracking-tight mb-6 max-w-4xl leading-tight">
+        <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 tracking-tight mb-6 max-w-4xl leading-tight animate-fade-in-up">
           Thư viện và Công cụ <br className="hidden md:block" />
           <span className="text-jade-500">Chế tác Icon</span> hoàn hảo
         </h1>
 
-        <p className="text-xl text-gray-600 max-w-2xl mb-12">
+        <p className="text-xl text-gray-600 max-w-2xl mb-6">
           Tìm kiếm hàng ngàn icon chuẩn mực, hoặc tự tay thiết kế và xuất code
           trực tiếp sang React, Vue, HTML chỉ với vài cú click chuột.
         </p>
+
+        {iconCount > 0 && (
+          <p className="text-sm text-jade-700 font-semibold mb-6">
+            {iconCount} icon đã được tạo bởi {userCount} người dùng
+          </p>
+        )}
 
         {/* Thanh tìm kiếm khổng lồ */}
         <div className="w-full max-w-2xl relative mb-12 shadow-lg rounded-full group">
@@ -121,6 +139,24 @@ export default function Home() {
           </p>
         </div>
       </section>
+
+      {/* --- ICON MỚI NHẤT TỪ CỘNG ĐỒNG --- */}
+      {latestIcons.length > 0 && (
+        <section className="w-full max-w-7xl mx-auto py-24 px-4">
+          <div className="flex items-end justify-between mb-8">
+            <h2 className="text-3xl font-extrabold text-gray-900">
+              Icon mới nhất
+            </h2>
+            <Link
+              href="/explore"
+              className="text-sm font-semibold text-jade-700 hover:text-jade-500 transition-colors"
+            >
+              Xem tất cả →
+            </Link>
+          </div>
+          <IconGrid icons={JSON.parse(JSON.stringify(latestIcons))} />
+        </section>
+      )}
     </main>
   );
 }

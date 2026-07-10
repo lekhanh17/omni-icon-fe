@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { shapes } from "../../lib/shapes";
+import { categories } from "../../lib/categories";
 import PenCanvas from "./PenCanvas";
 import FreehandCanvas from "./FreehandCanvas";
 
@@ -25,6 +26,7 @@ export default function BuilderPage() {
 
   // Thông tin lưu icon
   const [iconName, setIconName] = useState("");
+  const [category, setCategory] = useState(categories[0].id);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -132,6 +134,7 @@ export default function BuilderPage() {
           name: iconName.trim(),
           svgCode: generatedCode,
           shape: currentShape.id,
+          category,
           color,
           size,
           strokeWidth,
@@ -454,6 +457,17 @@ export default function BuilderPage() {
             onChange={(e) => setIconName(e.target.value)}
             className="w-full px-4 py-2.5 mb-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-jade-500 focus:border-jade-500 text-gray-900 text-sm"
           />
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full px-4 py-2.5 mb-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-jade-500 focus:border-jade-500 text-gray-900 text-sm"
+          >
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.label}
+              </option>
+            ))}
+          </select>
           <button
             onClick={handleSave}
             disabled={saving}

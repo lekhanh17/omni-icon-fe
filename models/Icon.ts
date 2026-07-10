@@ -46,6 +46,11 @@ const IconSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    likedBy: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "User",
+      default: [],
+    },
   },
   {
     timestamps: true, // Tự động thêm createdAt / updatedAt

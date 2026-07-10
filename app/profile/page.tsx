@@ -86,6 +86,28 @@ export default function ProfilePage() {
           setUsername(data.user.username ?? "");
           setBio(data.user.bio ?? "");
           setAvatarPreview(data.user.avatarUrl ?? "");
+
+          // Tự chữa localStorage nếu đang thiếu avatarUrl (vd: đổi ảnh ở phiên trước
+          // nhưng lúc đó chưa đồng bộ), để Header hiển thị đúng ngay khi vào trang này
+          const stored = localStorage.getItem("user");
+          if (stored) {
+            try {
+              const parsed = JSON.parse(stored);
+              if (parsed.avatarUrl !== data.user.avatarUrl) {
+                localStorage.setItem(
+                  "user",
+                  JSON.stringify({
+                    ...parsed,
+                    name: data.user.name,
+                    avatarUrl: data.user.avatarUrl,
+                  })
+                );
+                window.dispatchEvent(new Event("storage"));
+              }
+            } catch {
+              // Bỏ qua nếu dữ liệu localStorage bị hỏng
+            }
+          }
         } else {
           setError(data.message || "Không thể tải thông tin tài khoản.");
         }
@@ -155,14 +177,18 @@ export default function ProfilePage() {
       setNewPassword("");
       setConfirmNewPassword("");
 
-      // Đồng bộ lại localStorage để Header hiển thị đúng tên mới ngay lập tức
+      // Đồng bộ lại localStorage để Header hiển thị đúng tên/ảnh mới ngay lập tức
       const stored = localStorage.getItem("user");
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
           localStorage.setItem(
             "user",
-            JSON.stringify({ ...parsed, name: data.user.name })
+            JSON.stringify({
+              ...parsed,
+              name: data.user.name,
+              avatarUrl: data.user.avatarUrl,
+            })
           );
           window.dispatchEvent(new Event("storage"));
         } catch {

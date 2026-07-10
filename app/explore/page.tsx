@@ -1,25 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-interface IconItem {
-  _id: string;
-  name: string;
-  svgCode: string;
-  color: string;
-  size: number;
-  strokeWidth: number;
-  authorName?: string;
-  tags?: string[];
-  createdAt: string;
-}
+import IconGrid, { IconGridItem } from "../../components/IconGrid";
+import { categories } from "../../lib/categories";
 
 export default function ExplorePage() {
-  const [icons, setIcons] = useState<IconItem[]>([]);
+  const [icons, setIcons] = useState<IconGridItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>();
+
+  useEffect(() => {
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      try {
+        setCurrentUserId(JSON.parse(stored).id);
+      } catch {
+        setCurrentUserId(undefined);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -30,6 +32,7 @@ export default function ExplorePage() {
       try {
         const params = new URLSearchParams();
         if (search.trim()) params.set("q", search.trim());
+        if (activeCategory) params.set("category", activeCategory);
 
         const res = await fetch(`/api/icons?${params.toString()}`, {
           signal: controller.signal,
@@ -57,18 +60,12 @@ export default function ExplorePage() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [search]);
-
-  const handleCopy = (icon: IconItem) => {
-    navigator.clipboard.writeText(icon.svgCode);
-    setCopiedId(icon._id);
-    setTimeout(() => setCopiedId((prev) => (prev === icon._id ? null : prev)), 1500);
-  };
+  }, [search, activeCategory]);
 
   return (
     <main className="flex min-h-screen flex-col items-center px-6 py-16 bg-gray-50 w-full">
       <div className="w-full max-w-6xl">
-        <h1 className="text-4xl font-extrabold text-jade-900 mb-3">
+        <h1 className="text-4xl font-extrabold text-jade-900 mb-3 animate-fade-in-up">
           Thư viện Icon
         </h1>
         <p className="text-lg text-gray-600 mb-8">
@@ -76,7 +73,7 @@ export default function ExplorePage() {
         </p>
 
         {/* Ô tìm kiếm */}
-        <div className="mb-10 max-w-md">
+        <div className="mb-6 max-w-md">
           <input
             type="text"
             value={search}
@@ -86,6 +83,35 @@ export default function ExplorePage() {
           />
         </div>
 
+        {/* Bộ lọc danh mục */}
+        <div className="flex flex-wrap gap-2 mb-10">
+          <button
+            type="button"
+            onClick={() => setActiveCategory("")}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
+              activeCategory === ""
+                ? "bg-jade-900 text-white"
+                : "bg-white text-gray-600 border border-gray-200 hover:border-jade-300"
+            }`}
+          >
+            Tất cả
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setActiveCategory(cat.id)}
+              className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
+                activeCategory === cat.id
+                  ? "bg-jade-900 text-white"
+                  : "bg-white text-gray-600 border border-gray-200 hover:border-jade-300"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
         {error && (
           <div className="mb-6 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded-r-lg">
             ⚠️ {error}
@@ -93,41 +119,34 @@ export default function ExplorePage() {
         )}
 
         {loading ? (
-          <p className="text-gray-500">Đang tải icon...</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col items-center"
+              >
+                <div className="w-16 h-16 rounded-lg bg-gray-200 animate-skeleton mb-4" />
+                <div className="h-3 w-3/4 bg-gray-200 animate-skeleton rounded mb-3" />
+                <div className="h-7 w-full bg-gray-100 animate-skeleton rounded-full" />
+              </div>
+            ))}
+          </div>
         ) : icons.length === 0 ? (
           <div className="text-center py-20 text-gray-500">
             <p className="text-lg mb-2">Chưa có icon nào phù hợp.</p>
             <p className="text-sm">
               Hãy vào{" "}
-              <a href="/builder" className="text-jade-700 font-semibold underline">
+              <a
+                href="/builder"
+                className="text-jade-700 font-semibold underline"
+              >
                 Icon Builder
               </a>{" "}
               để tạo và lưu icon đầu tiên!
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-            {icons.map((icon) => (
-              <div
-                key={icon._id}
-                className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:border-jade-200 transition-all p-5 flex flex-col items-center"
-              >
-                <div
-                  className="w-16 h-16 flex items-center justify-center mb-4 [&>svg]:w-full [&>svg]:h-full"
-                  dangerouslySetInnerHTML={{ __html: icon.svgCode }}
-                />
-                <p className="text-sm font-semibold text-gray-800 text-center truncate w-full mb-3">
-                  {icon.name}
-                </p>
-                <button
-                  onClick={() => handleCopy(icon)}
-                  className="text-xs bg-jade-50 hover:bg-jade-200/60 text-jade-900 px-3 py-1.5 rounded-full font-semibold transition-colors w-full"
-                >
-                  {copiedId === icon._id ? "Đã copy!" : "Copy SVG"}
-                </button>
-              </div>
-            ))}
-          </div>
+          <IconGrid icons={icons} currentUserId={currentUserId} />
         )}
       </div>
     </main>

@@ -1,8 +1,10 @@
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { connectToDatabase } from "../../../lib/db";
 import User from "../../../models/User";
 import Icon from "../../../models/Icon";
-import PublicIconGrid from "./PublicIconGrid";
+import IconGrid from "../../../components/IconGrid";
+import { SESSION_COOKIE_NAME, verifySessionToken } from "../../../lib/auth";
 
 interface PageProps {
   params: Promise<{ username: string }>;
@@ -26,6 +28,12 @@ export default async function PublicProfilePage({ params }: PageProps) {
     .sort({ createdAt: -1 })
     .limit(100);
 
+  // Biết ai đang xem (nếu có đăng nhập) để hiển thị đúng trạng thái nút Yêu thích
+  const cookieStore = await cookies();
+  const currentUserId =
+    verifySessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value) ??
+    undefined;
+
   const joinedDate = new Date(user.createdAt).toLocaleDateString("vi-VN", {
     month: "long",
     year: "numeric",
@@ -35,7 +43,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
     <main className="flex min-h-screen flex-col items-center px-6 py-16 bg-gray-50 w-full">
       <div className="w-full max-w-5xl">
         {/* Header hồ sơ */}
-        <div className="flex flex-col items-center text-center mb-12">
+        <div className="flex flex-col items-center text-center mb-12 animate-fade-in-up">
           <div className="w-24 h-24 rounded-full bg-jade-900 text-white flex items-center justify-center text-3xl font-bold shadow-md mb-4 overflow-hidden uppercase">
             {user.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -67,7 +75,11 @@ export default async function PublicProfilePage({ params }: PageProps) {
           </div>
         </div>
 
-        <PublicIconGrid icons={JSON.parse(JSON.stringify(icons))} />
+        <IconGrid
+          icons={JSON.parse(JSON.stringify(icons))}
+          currentUserId={currentUserId}
+          emptyMessage="Người dùng này chưa lưu icon nào."
+        />
       </div>
     </main>
   );
