@@ -5,7 +5,8 @@ import { connectToDatabase } from "../../lib/db";
 import User from "../../models/User";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../lib/auth";
 
-// Bọc toàn bộ /admin/*: chỉ tài khoản có role "admin" mới vào được, còn lại chuyển hướng ra ngoài
+// Bọc toàn bộ /admin/*: tài khoản "admin" hoặc "staff" mới vào được, còn lại chuyển hướng ra ngoài.
+// Staff chỉ được kiểm duyệt nội dung (Icon/Bình luận), không thấy tab Người dùng (chỉ admin).
 export default async function AdminLayout({
   children,
 }: Readonly<{
@@ -21,9 +22,11 @@ export default async function AdminLayout({
   await connectToDatabase();
   const user = await User.findById(userId).select("role");
 
-  if (!user || user.role !== "admin") {
+  if (!user || (user.role !== "admin" && user.role !== "staff")) {
     redirect("/");
   }
+
+  const isAdmin = user.role === "admin";
 
   return (
     <main className="flex min-h-screen flex-col items-center px-6 py-12 bg-gray-50 w-full">
@@ -42,12 +45,14 @@ export default async function AdminLayout({
           >
             Tổng quan
           </Link>
-          <Link
-            href="/admin/users"
-            className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-jade-700 border-b-2 border-transparent hover:border-jade-500 transition-colors"
-          >
-            Người dùng
-          </Link>
+          {isAdmin && (
+            <Link
+              href="/admin/users"
+              className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-jade-700 border-b-2 border-transparent hover:border-jade-500 transition-colors"
+            >
+              Người dùng
+            </Link>
+          )}
           <Link
             href="/admin/icons"
             className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-jade-700 border-b-2 border-transparent hover:border-jade-500 transition-colors"

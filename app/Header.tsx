@@ -218,7 +218,7 @@ export default function Header() {
                 Yêu thích
               </Link>
             )}
-            {currentUser?.role === "admin" && (
+            {(currentUser?.role === "admin" || currentUser?.role === "staff") && (
               <Link
                 href="/admin"
                 className="text-jade-700 hover:text-jade-500 font-semibold transition-colors"

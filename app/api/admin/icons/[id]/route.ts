@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "../../../../../lib/db";
 import Icon from "../../../../../models/Icon";
 import Comment from "../../../../../models/Comment";
-import { requireAdmin } from "../../../../../lib/requireAdmin";
+import { requireStaffOrAdmin } from "../../../../../lib/requireAdmin";
 
-// DELETE /api/admin/icons/:id -> admin xoá bất kỳ icon nào (kiểm duyệt nội dung)
+// DELETE /api/admin/icons/:id -> admin/staff xoá bất kỳ icon nào (kiểm duyệt nội dung)
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const check = await requireAdmin(req);
+    const check = await requireStaffOrAdmin(req);
     if (!check.ok) {
       return NextResponse.json({ message: check.message }, { status: check.status });
     }

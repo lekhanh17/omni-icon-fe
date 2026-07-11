@@ -3,7 +3,7 @@ import { connectToDatabase } from "../../../../../lib/db";
 import User from "../../../../../models/User";
 import { requireAdmin } from "../../../../../lib/requireAdmin";
 
-// PATCH /api/admin/users/:id -> đổi vai trò (user/admin) và/hoặc khoá/mở khoá tài khoản
+// PATCH /api/admin/users/:id -> đổi vai trò (user/staff/admin) và/hoặc khoá/mở khoá tài khoản
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -27,7 +27,7 @@ export async function PATCH(
     const { role, isBanned } = await req.json();
 
     const update: { role?: string; isBanned?: boolean } = {};
-    if (role === "admin" || role === "user") {
+    if (role === "admin" || role === "staff" || role === "user") {
       update.role = role;
     }
     if (typeof isBanned === "boolean") {
