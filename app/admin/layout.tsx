@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { connectToDatabase } from "../../lib/db";
 import User from "../../models/User";
+import Report from "../../models/Report";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../lib/auth";
 
 // Bọc toàn bộ /admin/*: tài khoản "admin" hoặc "staff" mới vào được, còn lại chuyển hướng ra ngoài.
@@ -27,6 +28,7 @@ export default async function AdminLayout({
   }
 
   const isAdmin = user.role === "admin";
+  const pendingReportsCount = await Report.countDocuments({ status: "pending" });
 
   return (
     <main className="flex min-h-screen flex-col items-center px-6 py-12 bg-gray-50 w-full">
@@ -44,6 +46,17 @@ export default async function AdminLayout({
             className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-jade-700 border-b-2 border-transparent hover:border-jade-500 transition-colors"
           >
             Tổng quan
+          </Link>
+          <Link
+            href="/admin/reports"
+            className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-jade-700 border-b-2 border-transparent hover:border-jade-500 transition-colors flex items-center gap-1.5"
+          >
+            Báo cáo
+            {pendingReportsCount > 0 && (
+              <span className="text-[10px] font-bold bg-red-500 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                {pendingReportsCount}
+              </span>
+            )}
           </Link>
           {isAdmin && (
             <Link

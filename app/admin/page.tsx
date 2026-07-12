@@ -2,6 +2,7 @@ import { connectToDatabase } from "../../lib/db";
 import Icon from "../../models/Icon";
 import User from "../../models/User";
 import Comment from "../../models/Comment";
+import Report from "../../models/Report";
 import MonthlyChart, { MonthlyDataPoint } from "./MonthlyChart";
 
 const MONTHS_TO_SHOW = 6;
@@ -34,6 +35,7 @@ export default async function AdminDashboardPage() {
     bannedUsers,
     iconsToday,
     usersToday,
+    pendingReports,
     usersByMonth,
     iconsByMonth,
   ] = await Promise.all([
@@ -44,6 +46,7 @@ export default async function AdminDashboardPage() {
     User.countDocuments({ isBanned: true }),
     Icon.countDocuments({ createdAt: { $gte: startOfToday } }),
     User.countDocuments({ createdAt: { $gte: startOfToday } }),
+    Report.countDocuments({ status: "pending" }),
     User.aggregate([
       { $match: { createdAt: { $gte: rangeStart } } },
       {
@@ -81,6 +84,7 @@ export default async function AdminDashboardPage() {
     { label: "Tổng người dùng", value: totalUsers },
     { label: "Tổng icon", value: totalIcons },
     { label: "Tổng bình luận", value: totalComments },
+    { label: "Báo cáo chờ xử lý", value: pendingReports },
     { label: "Quản trị viên", value: totalAdmins },
     { label: "Tài khoản bị khoá", value: bannedUsers },
     { label: "Icon tạo hôm nay", value: iconsToday },

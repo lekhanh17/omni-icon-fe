@@ -218,6 +218,14 @@ export default function Header() {
                 Yêu thích
               </Link>
             )}
+            {currentUser && (
+              <Link
+                href="/collections"
+                className="text-gray-600 hover:text-jade-500 font-semibold transition-colors"
+              >
+                Bộ sưu tập
+              </Link>
+            )}
             {(currentUser?.role === "admin" || currentUser?.role === "staff") && (
               <Link
                 href="/admin"

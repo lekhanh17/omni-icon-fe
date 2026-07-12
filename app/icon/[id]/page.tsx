@@ -6,7 +6,12 @@ import Icon from "../../../models/Icon";
 import User from "../../../models/User";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../../lib/auth";
 import { categories } from "../../../lib/categories";
-import { IconExportCode, IconLikeButton } from "./IconDetailActions";
+import {
+  AddToCollectionButton,
+  IconExportCode,
+  IconLikeButton,
+  ReportButton,
+} from "./IconDetailActions";
 import IconComments from "./IconComments";
 
 interface PageProps {
@@ -131,13 +136,25 @@ export default async function IconDetailPage({ params }: PageProps) {
                 </div>
               </div>
 
-              <IconLikeButton
-                iconId={String(icon._id)}
-                initialLikedBy={(icon.likedBy ?? []).map((uid: unknown) =>
-                  String(uid)
-                )}
-                currentUserId={currentUserId}
-              />
+              <div className="flex items-center flex-wrap gap-3">
+                <IconLikeButton
+                  iconId={String(icon._id)}
+                  initialLikedBy={(icon.likedBy ?? []).map((uid: unknown) =>
+                    String(uid)
+                  )}
+                  currentUserId={currentUserId}
+                />
+                <AddToCollectionButton
+                  iconId={String(icon._id)}
+                  currentUserId={currentUserId}
+                />
+                <ReportButton
+                  targetType="icon"
+                  targetId={String(icon._id)}
+                  currentUserId={currentUserId}
+                  label="Báo cáo icon"
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ReportButton } from "./IconDetailActions";
 
 interface CommentItem {
   _id: string;
@@ -170,7 +171,7 @@ export default function IconComments({ iconId, currentUserId }: Props) {
                   {c.text}
                 </p>
               </div>
-              {currentUserId === c.authorId && (
+              {currentUserId === c.authorId ? (
                 <button
                   type="button"
                   onClick={() => handleDelete(c._id)}
@@ -178,6 +179,12 @@ export default function IconComments({ iconId, currentUserId }: Props) {
                 >
                   Xoá
                 </button>
+              ) : (
+                <ReportButton
+                  targetType="comment"
+                  targetId={c._id}
+                  currentUserId={currentUserId}
+                />
               )}
             </div>
           ))}
