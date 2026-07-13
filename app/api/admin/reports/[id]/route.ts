@@ -4,6 +4,7 @@ import Report from "../../../../../models/Report";
 import Icon from "../../../../../models/Icon";
 import Comment from "../../../../../models/Comment";
 import { requireStaffOrAdmin } from "../../../../../lib/requireAdmin";
+import { createNotification } from "../../../../../lib/notify";
 
 // PATCH /api/admin/reports/:id -> xử lý 1 báo cáo: xoá nội dung vi phạm hoặc bỏ qua báo cáo
 export async function PATCH(
@@ -38,8 +39,25 @@ export async function PATCH(
     if (action === "dismiss") {
       report.status = "dismissed";
       await report.save();
+
+      await createNotification({
+        recipientId: report.reporterId.toString(),
+        type: "report_resolved",
+        message: `Báo cáo vi phạm của bạn đã được xem xét — nội dung không vi phạm quy định.`,
+        link: report.targetType === "icon" ? `/icon/${report.targetId}` : "",
+      });
+
       return NextResponse.json({ report }, { status: 200 });
     }
+
+    // Các báo cáo khác (từ những người dùng khác) cùng trỏ tới nội dung này
+    // -> lấy trước danh sách người báo cáo để thông báo, vì sau khi xoá nội dung
+    // thì đường dẫn trong thông báo sẽ không còn dùng được nữa
+    const relatedReports = await Report.find({
+      targetType: report.targetType,
+      targetId: report.targetId,
+      status: "pending",
+    }).select("reporterId");
 
     // action === "delete_target": xoá icon/bình luận bị báo cáo
     if (report.targetType === "icon") {
@@ -57,6 +75,21 @@ export async function PATCH(
 
     report.status = "resolved";
     await report.save();
+
+    const reporterIds = new Set<string>(
+      relatedReports.map((r) => r.reporterId.toString())
+    );
+    reporterIds.add(report.reporterId.toString());
+
+    await Promise.all(
+      [...reporterIds].map((recipientId) =>
+        createNotification({
+          recipientId,
+          type: "report_resolved",
+          message: `Báo cáo vi phạm của bạn đã được xử lý — nội dung đã bị gỡ bỏ.`,
+        })
+      )
+    );
 
     return NextResponse.json({ report }, { status: 200 });
   } catch (error) {

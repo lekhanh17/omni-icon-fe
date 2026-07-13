@@ -4,6 +4,7 @@ import Comment from "../../../../../models/Comment";
 import Icon from "../../../../../models/Icon";
 import User from "../../../../../models/User";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../../../../lib/auth";
+import { createNotification } from "../../../../../lib/notify";
 
 // GET /api/icons/:id/comments -> danh sách bình luận của 1 icon (cũ -> mới)
 export async function GET(
@@ -63,7 +64,7 @@ export async function POST(
     const { id } = await params;
 
     const [icon, user] = await Promise.all([
-      Icon.findById(id).select("_id"),
+      Icon.findById(id).select("_id name authorId"),
       User.findById(userId).select("name avatarUrl"),
     ]);
 
@@ -88,6 +89,18 @@ export async function POST(
       authorAvatarUrl: user.avatarUrl || "",
       text,
     });
+
+    // Thông báo cho chủ icon (nếu có và không phải tự bình luận icon của mình)
+    if (icon.authorId && icon.authorId.toString() !== userId) {
+      await createNotification({
+        recipientId: icon.authorId.toString(),
+        type: "comment",
+        message: `${user.name} đã bình luận về icon "${icon.name}": "${
+          text.length > 80 ? `${text.slice(0, 80)}...` : text
+        }"`,
+        link: `/icon/${id}`,
+      });
+    }
 
     return NextResponse.json({ comment }, { status: 201 });
   } catch (error) {

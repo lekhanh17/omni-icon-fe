@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import NotificationBell from "./NotificationBell";
 
 interface SearchIconResult {
   _id: string;
@@ -346,6 +347,7 @@ export default function Header() {
         <div className="flex items-center gap-2 sm:gap-4">
           {currentUser ? (
             <div className="flex items-center gap-3 sm:gap-4">
+              <NotificationBell />
               <Link
                 href="/profile"
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity"
