@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "./Header"; // Nhập cấu phần Header động vào đây
+import Footer from "./Footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,12 +18,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body className={inter.className}>
+      <body className={`${inter.className} flex flex-col min-h-screen`}>
         {/* --- THANH HEADER ĐỘNG (Đã được xử lý phân tách cấu phần) --- */}
         <Header />
 
         {/* --- NỘI DUNG TRANG --- */}
-        <div className="min-h-screen bg-jade-50/30">{children}</div>
+        <div className="flex-1 w-full bg-jade-50/30">{children}</div>
+
+        {/* --- FOOTER --- */}
+        <Footer />
       </body>
     </html>
   );
