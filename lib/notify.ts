@@ -2,7 +2,7 @@ import Notification from "../models/Notification";
 
 interface CreateNotificationInput {
   recipientId: string;
-  type: "comment" | "like" | "report_resolved";
+  type: "comment" | "like" | "report_resolved" | "follow";
   message: string;
   link?: string;
 }

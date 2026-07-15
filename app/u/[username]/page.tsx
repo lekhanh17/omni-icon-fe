@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { connectToDatabase } from "../../../lib/db";
 import User from "../../../models/User";
 import Icon from "../../../models/Icon";
+import Follow from "../../../models/Follow";
 import IconGrid from "../../../components/IconGrid";
+import FollowButton from "./FollowButton";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../../lib/auth";
 
 interface PageProps {
@@ -28,11 +30,21 @@ export default async function PublicProfilePage({ params }: PageProps) {
     .sort({ createdAt: -1 })
     .limit(100);
 
-  // Biết ai đang xem (nếu có đăng nhập) để hiển thị đúng trạng thái nút Yêu thích
+  // Biết ai đang xem (nếu có đăng nhập) để hiển thị đúng trạng thái nút Yêu thích/Theo dõi
   const cookieStore = await cookies();
   const currentUserId =
     verifySessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value) ??
     undefined;
+
+  const isOwnProfile = currentUserId === user._id.toString();
+
+  const [followerCount, followingCount, isFollowing] = await Promise.all([
+    Follow.countDocuments({ followingId: user._id }),
+    Follow.countDocuments({ followerId: user._id }),
+    currentUserId && !isOwnProfile
+      ? Follow.exists({ followerId: currentUserId, followingId: user._id })
+      : Promise.resolve(null),
+  ]);
 
   const joinedDate = new Date(user.createdAt).toLocaleDateString("vi-VN", {
     month: "long",
@@ -66,13 +78,29 @@ export default async function PublicProfilePage({ params }: PageProps) {
             <p className="text-gray-600 max-w-md mb-4">{user.bio}</p>
           )}
 
-          <div className="flex gap-6 text-sm text-gray-500">
+          <div className="flex gap-6 text-sm text-gray-500 mb-6">
             <span>
               <strong className="text-gray-900">{icons.length}</strong> icon
               đã tạo
             </span>
+            <span>
+              <strong className="text-gray-900">{followerCount}</strong>{" "}
+              người theo dõi
+            </span>
+            <span>
+              <strong className="text-gray-900">{followingCount}</strong>{" "}
+              đang theo dõi
+            </span>
             <span>Tham gia {joinedDate}</span>
           </div>
+
+          {!isOwnProfile && (
+            <FollowButton
+              targetUserId={user._id.toString()}
+              currentUserId={currentUserId}
+              initialFollowing={!!isFollowing}
+            />
+          )}
         </div>
 
         <IconGrid

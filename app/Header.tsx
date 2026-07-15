@@ -221,6 +221,14 @@ export default function Header() {
             )}
             {currentUser && (
               <Link
+                href="/following"
+                className="text-gray-600 hover:text-jade-500 font-semibold transition-colors"
+              >
+                Đang theo dõi
+              </Link>
+            )}
+            {currentUser && (
+              <Link
                 href="/collections"
                 className="text-gray-600 hover:text-jade-500 font-semibold transition-colors"
               >
