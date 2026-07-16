@@ -13,6 +13,8 @@ import {
   ReportButton,
 } from "./IconDetailActions";
 import IconComments from "./IconComments";
+import EditIconButton from "./EditIconButton";
+import DownloadButton from "./DownloadButton";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -137,6 +139,10 @@ export default async function IconDetailPage({ params }: PageProps) {
               </div>
 
               <div className="flex items-center flex-wrap gap-3">
+                <DownloadButton
+                  svgCode={icon.svgCode}
+                  fileName={icon.name}
+                />
                 <IconLikeButton
                   iconId={String(icon._id)}
                   initialLikedBy={(icon.likedBy ?? []).map((uid: unknown) =>
@@ -147,6 +153,15 @@ export default async function IconDetailPage({ params }: PageProps) {
                 <AddToCollectionButton
                   iconId={String(icon._id)}
                   currentUserId={currentUserId}
+                />
+                <EditIconButton
+                  iconId={String(icon._id)}
+                  currentUserId={currentUserId}
+                  authorId={icon.authorId ? String(icon.authorId) : undefined}
+                  initialName={icon.name}
+                  initialCategory={icon.category}
+                  initialTags={icon.tags ?? []}
+                  initialSvgCode={icon.svgCode}
                 />
                 <ReportButton
                   targetType="icon"
