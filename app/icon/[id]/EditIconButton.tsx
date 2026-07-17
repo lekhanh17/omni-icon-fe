@@ -34,6 +34,7 @@ export default function EditIconButton({
   const [tagsInput, setTagsInput] = useState(initialTags.join(", "));
   const [svgCode, setSvgCode] = useState(initialSvgCode);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [categoryOpen, setCategoryOpen] = useState(false);
   const categoryBoxRef = useRef<HTMLDivElement>(null);
@@ -97,6 +98,35 @@ export default function EditIconButton({
       setError("Không thể kết nối đến máy chủ.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (
+      !confirm(
+        "Xoá vĩnh viễn icon này? Bình luận, lượt thích sẽ mất theo và không thể hoàn tác."
+      )
+    ) {
+      return;
+    }
+
+    setError("");
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/icons/${iconId}`, { method: "DELETE" });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.message || "Không thể xoá icon.");
+        return;
+      }
+
+      router.push("/explore");
+      router.refresh();
+    } catch {
+      setError("Không thể kết nối đến máy chủ.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -216,21 +246,32 @@ export default function EditIconButton({
 
               {error && <p className="text-xs text-red-500">{error}</p>}
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
-                  className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="text-xs font-semibold text-red-500 hover:text-red-600 disabled:opacity-40 transition-colors"
                 >
-                  Huỷ
+                  {deleting ? "Đang xoá..." : "Xoá icon vĩnh viễn"}
                 </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="text-sm font-semibold text-white bg-jade-900 hover:bg-jade-700 disabled:opacity-50 px-5 py-2 rounded-full transition-colors"
-                >
-                  {saving ? "Đang lưu..." : "Lưu thay đổi"}
-                </button>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2"
+                  >
+                    Huỷ
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="text-sm font-semibold text-white bg-jade-900 hover:bg-jade-700 disabled:opacity-50 px-5 py-2 rounded-full transition-colors"
+                  >
+                    {saving ? "Đang lưu..." : "Lưu thay đổi"}
+                  </button>
+                </div>
               </div>
             </form>
             </div>

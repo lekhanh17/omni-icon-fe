@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "../../../../lib/db";
 import Icon from "../../../../models/Icon";
+import Comment from "../../../../models/Comment";
+import Collection from "../../../../models/Collection";
+import Report from "../../../../models/Report";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../../../lib/auth";
 
 // GET /api/icons/:id -> chi tiết 1 icon
@@ -105,6 +108,59 @@ export async function PATCH(
     return NextResponse.json({ icon }, { status: 200 });
   } catch (error) {
     console.error("Lỗi API Sửa Icon:", error);
+    return NextResponse.json(
+      { message: "Đã có lỗi xảy ra ở hệ thống. Vui lòng thử lại sau." },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/icons/:id -> chủ icon tự xoá icon của mình (cascade dọn dẹp dữ liệu liên quan)
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+    const userId = verifySessionToken(token);
+
+    if (!userId) {
+      return NextResponse.json(
+        { message: "Vui lòng đăng nhập." },
+        { status: 401 }
+      );
+    }
+
+    await connectToDatabase();
+    const { id } = await params;
+
+    const icon = await Icon.findById(id);
+    if (!icon) {
+      return NextResponse.json(
+        { message: "Không tìm thấy icon." },
+        { status: 404 }
+      );
+    }
+
+    if (!icon.authorId || icon.authorId.toString() !== userId) {
+      return NextResponse.json(
+        { message: "Bạn không có quyền xoá icon này." },
+        { status: 403 }
+      );
+    }
+
+    await Icon.findByIdAndDelete(id);
+    await Comment.deleteMany({ iconId: id });
+    await Collection.updateMany({}, { $pull: { iconIds: id } });
+    // Các báo cáo còn chờ xử lý về icon này coi như đã xong (nội dung không còn nữa)
+    await Report.updateMany(
+      { targetType: "icon", targetId: id, status: "pending" },
+      { status: "resolved" }
+    );
+
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (error) {
+    console.error("Lỗi API Xoá Icon:", error);
     return NextResponse.json(
       { message: "Đã có lỗi xảy ra ở hệ thống. Vui lòng thử lại sau." },
       { status: 500 }
