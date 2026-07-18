@@ -28,6 +28,20 @@ export default function Header() {
     role?: string;
   } | null>(null);
 
+  // --- Menu "Thêm" gom các mục ít dùng để Header đỡ chật ---
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
+        setMoreMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // --- Tìm kiếm nhanh (icon + người dùng) ---
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
@@ -212,36 +226,69 @@ export default function Header() {
               Xếp hạng
             </Link>
             {currentUser && (
-              <Link
-                href="/favorites"
-                className="text-gray-600 hover:text-jade-500 font-semibold transition-colors"
-              >
-                Yêu thích
-              </Link>
-            )}
-            {currentUser && (
-              <Link
-                href="/following"
-                className="text-gray-600 hover:text-jade-500 font-semibold transition-colors"
-              >
-                Đang theo dõi
-              </Link>
-            )}
-            {currentUser && (
-              <Link
-                href="/collections"
-                className="text-gray-600 hover:text-jade-500 font-semibold transition-colors"
-              >
-                Bộ sưu tập
-              </Link>
-            )}
-            {(currentUser?.role === "admin" || currentUser?.role === "staff") && (
-              <Link
-                href="/admin"
-                className="text-jade-700 hover:text-jade-500 font-semibold transition-colors"
-              >
-                Quản trị
-              </Link>
+              <div ref={moreMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMoreMenuOpen((o) => !o)}
+                  className="flex items-center gap-1 text-gray-600 hover:text-jade-500 font-semibold transition-colors"
+                >
+                  Thêm
+                  <svg
+                    className={`w-3.5 h-3.5 transition-transform ${
+                      moreMenuOpen ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+
+                {moreMenuOpen && (
+                  <div className="absolute top-full left-0 mt-2 w-52 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50 animate-fade-in-up">
+                    <Link
+                      href="/favorites"
+                      onClick={() => setMoreMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-jade-50/60 transition-colors"
+                    >
+                      Yêu thích
+                    </Link>
+                    <Link
+                      href="/following"
+                      onClick={() => setMoreMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-jade-50/60 transition-colors"
+                    >
+                      Đang theo dõi
+                    </Link>
+                    <Link
+                      href="/collections"
+                      onClick={() => setMoreMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-jade-50/60 transition-colors"
+                    >
+                      Bộ sưu tập
+                    </Link>
+                    {(currentUser.role === "admin" ||
+                      currentUser.role === "staff") && (
+                      <>
+                        <div className="my-1 border-t border-gray-100" />
+                        <Link
+                          href="/admin"
+                          onClick={() => setMoreMenuOpen(false)}
+                          className="block px-4 py-2 text-sm font-semibold text-jade-700 hover:bg-jade-50/60 transition-colors"
+                        >
+                          Quản trị
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </nav>
         </div>
@@ -372,13 +419,13 @@ export default function Header() {
                     currentUser.name.charAt(0)
                   )}
                 </div>
-                <span className="text-sm font-semibold text-gray-700 hidden md:inline max-w-30 truncate">
+                <span className="text-sm font-semibold text-gray-700 hidden md:inline max-w-30 truncate whitespace-nowrap">
                   Chào, {currentUser.name}
                 </span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-sm font-semibold text-red-600 hover:text-red-500 px-4 py-1.5 border border-red-200 hover:border-red-400 rounded-full bg-red-50/20 transition-all shadow-sm"
+                className="text-sm font-semibold text-red-600 hover:text-red-500 px-4 py-1.5 border border-red-200 hover:border-red-400 rounded-full bg-red-50/20 transition-all shadow-sm shrink-0 whitespace-nowrap"
               >
                 Đăng xuất
               </button>
